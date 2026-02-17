@@ -22,7 +22,7 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-900 to-slate-800 px-6 py-20">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-b from-slate-900 to-slate-800 px-6 py-20">
       <Toaster position="top-right" />
       <div className="w-full max-w-2xl bg-white/5 backdrop-blur-lg border border-slate-700/50 p-12 rounded-3xl shadow-2xl">
         <h2 className="text-4xl font-extrabold text-white mb-3 text-center tracking-wide">

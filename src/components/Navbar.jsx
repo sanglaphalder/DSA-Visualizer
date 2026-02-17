@@ -95,6 +95,14 @@ export default function Navbar() {
             </svg>
             Star
           </a>
+
+          {/* Sign In Button */}
+          <Link
+            to="/signin"
+            className="ml-4 rounded-full bg-blue-600 px-5 py-2 text-sm font-bold text-white transition hover:bg-blue-500"
+          >
+            Sign In
+          </Link>
         </div>
 
         {/* Mobile Menu Button */}
@@ -163,6 +171,21 @@ export default function Navbar() {
                   </Link>
                 </MotionDiv>
               ))}
+
+              {/* Mobile Sign In Link */}
+              <MotionDiv
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: navLinks.length * 0.07, duration: 0.25 }}
+              >
+                <Link
+                  to="/signin"
+                  onClick={closeMobile}
+                  className="flex items-center rounded-lg px-4 py-3 text-sm font-medium text-slate-400 transition-all hover:bg-white/5 hover:text-white"
+                >
+                  Sign In
+                </Link>
+              </MotionDiv>
 
               {/* Mobile GitHub Link */}
               <MotionDiv

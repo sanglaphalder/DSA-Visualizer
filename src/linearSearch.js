@@ -1,4 +1,4 @@
-import { sleep } from '../../utils/helpers';
+import { sleep } from './utils/helpers';
 
 export const linearSearch = async (array, setArray, speed, stopSignal, pauseSignal) => {
     // Create a copy of the array to avoid direct mutation

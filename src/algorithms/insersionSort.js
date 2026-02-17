@@ -1,4 +1,4 @@
-import { sleep } from '../../utils/helpers';
+import { sleep } from '../utils/helpers';
 
 export const insertionSort = async (array, setArray, speed, stopSignal, pauseSignal) => {
   let arr = array.map(item => ({ ...item }));

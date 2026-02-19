@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
@@ -15,7 +14,6 @@ import {
   TimerReset,
   X,
   Zap,
-  Waypoints,
 } from 'lucide-react';
 
 const algorithmsCatalog = [
@@ -88,7 +86,7 @@ const algorithmsCatalog = [
     icon: Search,
     gradient: 'from-emerald-400/25 via-teal-500/15 to-transparent',
     accent: 'text-emerald-100',
-  },
+},
   {
     id: 'radix-sort',
     title: 'Radix Sort',
@@ -133,7 +131,7 @@ const algorithmsCatalog = [
   },
   {
     id: 'linked-list',
-    title: 'Linked List Essentials',
+    title: 'Reverse Linked List',
     description:
       'Visualize Reverse Linked List and Middle Node (slow/fast pointers) with step-by-step pointer movement.',
     path: '/visualizer/linked-list',
@@ -159,20 +157,6 @@ const algorithmsCatalog = [
     gradient: 'from-violet-500/25 via-fuchsia-500/15 to-transparent',
     accent: 'text-violet-200',
   },
-  {
-    id: 'dijkstra',
-    title: "Dijkstra's Algorithm",
-    description:
-      "Finds the shortest paths between nodes in a graph, which may represent road networks.",
-    path: '/visualizer/dijkstra',
-    category: 'pathfinding',
-    type: 'Greedy',
-    complexity: 'O(E + V log V)',
-    level: 'Advanced',
-    icon: Waypoints,
-    gradient: 'from-orange-500/25 via-amber-500/15 to-transparent',
-    accent: 'text-orange-200',
-  },
 ];
 
 const filterTabs = [
@@ -180,7 +164,6 @@ const filterTabs = [
   { id: 'sorting', label: 'Sorting' },
   { id: 'searching', label: 'Searching' },
   { id: 'linked-list', label: 'Linked List' },
-  { id: 'pathfinding', label: 'Pathfinding' },
 ];
 
 const levelTabs = ['All', 'Beginner', 'Intermediate', 'Advanced'];
@@ -200,7 +183,6 @@ const complexityRank = {
 };
 
 export default function Algorithms() {
-  useDocumentTitle('Algorithms');
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchText, setSearchText] = useState('');

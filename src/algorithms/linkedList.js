@@ -1,3 +1,4 @@
+// --- C++ Snippets ---
 export const reverseLinkedListCPP = `#include <iostream>
 using namespace std;
 
@@ -90,6 +91,7 @@ int main() {
     return 0;
 }`;
 
+// --- Python Snippets ---
 export const reverseLinkedListPython = `class Node:
     def __init__(self, data):
         self.data = data
@@ -148,3 +150,69 @@ if __name__ == "__main__":
     middle = find_middle(head)
     if middle:
         print("Middle node value:", middle.data)`;
+
+// --- Java Snippets ---
+export const reverseLinkedListJava = `class Node {
+    int data;
+    Node next;
+    Node(int data) {
+        this.data = data;
+        this.next = null;
+    }
+}
+
+public class Main {
+    public static Node reverseList(Node head) {
+        Node prev = null;
+        Node current = head;
+        Node next = null;
+        
+        while (current != null) {
+            next = current.next;
+            current.next = prev;
+            prev = current;
+            current = next;
+        }
+        return prev;
+    }
+
+    public static void main(String[] args) {
+        Node head = new Node(10);
+        head.next = new Node(20);
+        head.next.next = new Node(30);
+        
+        head = reverseList(head);
+        // List is now reversed
+    }
+}`;
+
+export const middleNodeJava = `class Node {
+    int data;
+    Node next;
+    Node(int data) {
+        this.data = data;
+        this.next = null;
+    }
+}
+
+public class Main {
+    public static Node findMiddle(Node head) {
+        Node slow = head;
+        Node fast = head;
+        
+        while (fast != null && fast.next != null) {
+            slow = slow.next;
+            fast = fast.next.next;
+        }
+        return slow;
+    }
+
+    public static void main(String[] args) {
+        Node head = new Node(1);
+        head.next = new Node(2);
+        head.next.next = new Node(3);
+        
+        Node middle = findMiddle(head);
+        System.out.println("Middle Node: " + middle.data);
+    }
+}`;

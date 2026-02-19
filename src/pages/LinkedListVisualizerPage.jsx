@@ -19,6 +19,8 @@ import {
   reverseLinkedListCPP,
   middleNodePython,
   reverseLinkedListPython,
+  middleNodeJava,      // New Import
+  reverseLinkedListJava, // New Import
 } from "../algorithms/linkedList";
 import { renderHighlightedCode } from "../utils/codeHighlight";
 
@@ -58,6 +60,7 @@ const linkedListAlgorithms = {
     space: "O(1)",
     cppSnippet: reverseLinkedListCPP,
     pythonSnippet: reverseLinkedListPython,
+    javaSnippet: reverseLinkedListJava, // Added Java
   },
   middle: {
     title: "Middle Node (Slow/Fast)",
@@ -67,6 +70,7 @@ const linkedListAlgorithms = {
     space: "O(1)",
     cppSnippet: middleNodeCPP,
     pythonSnippet: middleNodePython,
+    javaSnippet: middleNodeJava, // Added Java
   },
 };
 
@@ -110,15 +114,7 @@ function createLinkedListState(size) {
 }
 
 function getFocusPointer(markers, nodes) {
-  const priority = [
-    "current",
-    "head",
-    "slow",
-    "fast",
-    "middle",
-    "prev",
-    "next",
-  ];
+  const priority = ["current", "head", "slow", "fast", "middle", "prev", "next"];
   for (const key of priority) {
     const pointerIndex = markers[key];
     if (
@@ -170,10 +166,13 @@ export default function LinkedListVisualizerPage() {
 
   const activeAlgorithm = linkedListAlgorithms[selectedAlgorithm];
   useDocumentTitle(activeAlgorithm.title);
-  const activeCodeSnippet =
-    selectedLanguage === "C++"
-      ? activeAlgorithm.cppSnippet
-      : activeAlgorithm.pythonSnippet;
+
+  // Updated Snippet Selection logic
+  const activeCodeSnippet = useMemo(() => {
+    if (selectedLanguage === "C++") return activeAlgorithm.cppSnippet;
+    if (selectedLanguage === "Python") return activeAlgorithm.pythonSnippet;
+    return activeAlgorithm.javaSnippet;
+  }, [selectedLanguage, activeAlgorithm]);
 
   const progress = useMemo(
     () =>
@@ -189,17 +188,14 @@ export default function LinkedListVisualizerPage() {
     let elapsed = 0;
     while (elapsed < durationMs) {
       if (stopSignal.current) return false;
-
       while (pauseSignal.current) {
         if (stopSignal.current) return false;
         await sleep(80);
       }
-
       const chunk = Math.min(40, durationMs - elapsed);
       await sleep(chunk);
       elapsed += chunk;
     }
-
     return !stopSignal.current;
   }, []);
 
@@ -212,10 +208,7 @@ export default function LinkedListVisualizerPage() {
 
   const resetNodeHighlights = useCallback(() => {
     setNodes((currentNodes) =>
-      currentNodes.map((node) => ({
-        ...node,
-        status: "default",
-      })),
+      currentNodes.map((node) => ({ ...node, status: "default" })),
     );
   }, []);
 
@@ -223,7 +216,6 @@ export default function LinkedListVisualizerPage() {
     (size) => {
       hardStopRun();
       const nextGraph = createLinkedListState(size);
-
       setNodes(nextGraph.nodes);
       setNextLinks(nextGraph.nextLinks);
       setHeadIndex(nextGraph.headIndex);
@@ -266,13 +258,11 @@ export default function LinkedListVisualizerPage() {
 
       setNodes([...workingNodes]);
       setMarkers({
+        ...EMPTY_MARKERS,
         head: headIndex,
         current,
         prev,
         next: nextNode,
-        slow: null,
-        fast: null,
-        middle: null,
       });
       setStatusMessage(
         `Step ${localStep}: save next of ${workingNodes[current].value}, then reverse current pointer.`,
@@ -306,18 +296,13 @@ export default function LinkedListVisualizerPage() {
 
     setNodes(completedNodes);
     setHeadIndex(prev);
-    setMarkers({
-      ...EMPTY_MARKERS,
-      head: prev,
-    });
+    setMarkers({ ...EMPTY_MARKERS, head: prev });
     setStatusMessage("Reversal complete. Head now points to the old tail.");
-
     return true;
   }, [headIndex, nextLinks, nodes, speed, waitWithControl]);
 
   const runMiddleNode = useCallback(async () => {
     if (headIndex === null) return true;
-
     const workingLinks = [...nextLinks];
     const workingNodes = nodes.map((node) => ({ ...node, status: "default" }));
     let slow = headIndex;
@@ -328,20 +313,14 @@ export default function LinkedListVisualizerPage() {
       localStep += 1;
       setStepCount(localStep);
 
-      const currentFast = fast;
       workingNodes.forEach((node, index) => {
         if (index === slow) node.status = "slow";
-        else if (index === currentFast) node.status = "fast";
+        else if (index === fast) node.status = "fast";
         else node.status = "default";
       });
 
       setNodes([...workingNodes]);
-      setMarkers({
-        ...EMPTY_MARKERS,
-        head: headIndex,
-        slow,
-        fast: currentFast,
-      });
+      setMarkers({ ...EMPTY_MARKERS, head: headIndex, slow, fast });
       setStatusMessage(
         `Step ${localStep}: move slow by 1 and fast by 2 until fast reaches the tail.`,
       );
@@ -350,7 +329,7 @@ export default function LinkedListVisualizerPage() {
       if (!canContinue) return false;
 
       slow = workingLinks[slow];
-      const fastNext = workingLinks[currentFast];
+      const fastNext = workingLinks[fast];
       fast = fastNext !== null ? workingLinks[fastNext] : null;
     }
 
@@ -359,19 +338,13 @@ export default function LinkedListVisualizerPage() {
     });
 
     setNodes([...workingNodes]);
-    setMarkers({
-      ...EMPTY_MARKERS,
-      head: headIndex,
-      middle: slow,
-    });
+    setMarkers({ ...EMPTY_MARKERS, head: headIndex, middle: slow });
     setStatusMessage(`Middle node found: ${workingNodes[slow].value}.`);
-
     return waitWithControl(Math.max(120, Math.floor(speed * 0.6)));
   }, [headIndex, nextLinks, nodes, speed, waitWithControl]);
 
   const handleStart = useCallback(async () => {
     if (nodes.length === 0 || isRunning) return;
-
     stopSignal.current = false;
     pauseSignal.current = false;
     setIsRunning(true);
@@ -385,7 +358,6 @@ export default function LinkedListVisualizerPage() {
         : await runMiddleNode();
 
     if (stopSignal.current) return;
-
     setIsRunning(false);
     setIsPaused(false);
     setRunStatus(completed ? "Completed" : "Idle");
@@ -423,7 +395,10 @@ export default function LinkedListVisualizerPage() {
   }, [activeCodeSnippet]);
 
   const handleDownloadCode = useCallback(() => {
-    const extension = selectedLanguage === "C++" ? ".cpp" : ".py";
+    let extension = ".cpp";
+    if (selectedLanguage === "Python") extension = ".py";
+    if (selectedLanguage === "Java") extension = ".java";
+
     const blob = new Blob([activeCodeSnippet], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -435,21 +410,15 @@ export default function LinkedListVisualizerPage() {
 
   const listTraversal = useMemo(() => {
     if (headIndex === null) return { order: [], hasCycle: false };
-
     const visited = new Set();
     const order = [];
     let cursor = headIndex;
-
     while (cursor !== null && !visited.has(cursor)) {
       order.push(cursor);
       visited.add(cursor);
       cursor = nextLinks[cursor];
     }
-
-    return {
-      order,
-      hasCycle: cursor !== null,
-    };
+    return { order, hasCycle: cursor !== null };
   }, [headIndex, nextLinks]);
 
   const nodeRenderOrder = useMemo(() => {
@@ -459,36 +428,21 @@ export default function LinkedListVisualizerPage() {
     return nodes.map((_, index) => index);
   }, [headIndex, listTraversal.order, nodes]);
 
-  const pointerSummary = useMemo(() => {
-    return Object.entries(markerLabels)
-      .filter(([key]) => markers[key] !== null)
-      .map(([key, label]) => ({
-        key,
-        label,
-        value: nodes[markers[key]]?.value,
-      }))
-      .filter((item) => item.value !== undefined);
-  }, [markers, nodes]);
-
   const focusPointer = getFocusPointer(markers, nodes);
   const focusIndex = focusPointer?.index ?? null;
 
   useEffect(() => {
     if (focusIndex === null) return;
-
     const viewport = nodeViewportRef.current;
     const focusedNode = nodeItemRefs.current[focusIndex];
     if (!viewport || !focusedNode) return;
-
     const targetLeft =
       focusedNode.offsetLeft -
       viewport.clientWidth / 2 +
       focusedNode.clientWidth / 2;
     const maxLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
-    const clampedLeft = Math.min(maxLeft, Math.max(0, targetLeft));
-
     viewport.scrollTo({
-      left: clampedLeft,
+      left: Math.min(maxLeft, Math.max(0, targetLeft)),
       behavior: isRunning ? "smooth" : "auto",
     });
   }, [focusIndex, isRunning]);
@@ -508,69 +462,32 @@ export default function LinkedListVisualizerPage() {
               <span className="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-cyan-200">
                 Linked List
               </span>
-              <span
-                className={`rounded-full border px-3 py-1 text-xs font-semibold ${runStatusStyleMap[runStatus]}`}
-              >
+              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${runStatusStyleMap[runStatus]}`}>
                 {runStatus}
               </span>
             </div>
-
             <h1 className="font-display text-3xl font-black text-white sm:text-4xl lg:text-5xl">
               {activeAlgorithm.title}
             </h1>
-            <p className="mt-3 text-sm text-slate-300 sm:text-base">
-              {activeAlgorithm.description}
-            </p>
-
+            <p className="mt-3 text-sm text-slate-300 sm:text-base">{activeAlgorithm.description}</p>
             <div className="mt-5">
               <div className="mb-2 flex items-center justify-between text-xs uppercase tracking-widest text-slate-400">
                 <span>Progress</span>
                 <span>{progress}%</span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-slate-700/70">
-                <MotionDiv
-                  animate={{ width: `${progress}%` }}
-                  className="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500"
-                />
+                <MotionDiv animate={{ width: `${progress}%` }} className="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500" />
               </div>
             </div>
-
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4 text-center">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <p className="text-[11px] uppercase tracking-wider text-slate-400">
-                  Nodes
-                </p>
-                <p className="mt-1 text-sm font-semibold text-white">
-                  {nodes.length}
-                </p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <p className="text-[11px] uppercase tracking-wider text-slate-400">
-                  Time
-                </p>
-                <p className="mt-1 text-sm font-semibold text-cyan-200">
-                  {activeAlgorithm.complexity}
-                </p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <p className="text-[11px] uppercase tracking-wider text-slate-400">
-                  Space
-                </p>
-                <p className="mt-1 text-sm font-semibold text-blue-100">
-                  {activeAlgorithm.space}
-                </p>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <p className="text-[11px] uppercase tracking-wider text-slate-400">
-                  Steps
-                </p>
-                <p className="mt-1 text-sm font-semibold text-emerald-200">
-                  {stepCount}
-                </p>
-              </div>
+              {[ { label: "Nodes", val: nodes.length, color: "text-white" }, { label: "Time", val: activeAlgorithm.complexity, color: "text-cyan-200" }, { label: "Space", val: activeAlgorithm.space, color: "text-blue-100" }, { label: "Steps", val: stepCount, color: "text-emerald-200" } ].map((stat) => (
+                <div key={stat.label} className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  <p className="text-[11px] uppercase tracking-wider text-slate-400">{stat.label}</p>
+                  <p className={`mt-1 text-sm font-semibold ${stat.color}`}>{stat.val}</p>
+                </div>
+              ))}
             </div>
           </div>
-
           <div className="rounded-2xl border border-white/10 bg-slate-900/55 p-5">
             <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-300">
               <Activity size={14} className="text-cyan-300" /> Runtime Snapshot
@@ -578,15 +495,11 @@ export default function LinkedListVisualizerPage() {
             <div className="mt-4 space-y-3">
               <div className="rounded-xl bg-white/5 p-3">
                 <p className="text-[11px] text-slate-400">Current Step</p>
-                <p className="text-sm font-semibold text-white">
-                  {statusMessage}
-                </p>
+                <p className="text-sm font-semibold text-white">{statusMessage}</p>
               </div>
               <div className="rounded-xl bg-white/5 p-3">
                 <p className="text-[11px] text-slate-400">Head Value</p>
-                <p className="text-lg font-bold text-cyan-100">
-                  {headIndex === null ? "null" : nodes[headIndex]?.value}
-                </p>
+                <p className="text-lg font-bold text-cyan-100">{headIndex === null ? "null" : nodes[headIndex]?.value}</p>
               </div>
               <div className="rounded-xl bg-white/5 p-3">
                 <p className="text-[11px] text-slate-400">Delay</p>
@@ -601,251 +514,74 @@ export default function LinkedListVisualizerPage() {
         <aside className="flex h-full flex-col rounded-3xl border border-white/10 bg-slate-800/35 p-5 backdrop-blur">
           <div className="mb-5 flex items-center gap-2">
             <Binary size={18} className="text-cyan-300" />
-            <h2 className="text-sm font-bold uppercase tracking-widest text-white">
-              Linked List Controls
-            </h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-white">Controls</h2>
           </div>
-
           <div className="flex flex-1 flex-col gap-4">
             <div className="rounded-2xl bg-white/5 p-3">
-              <label className="mb-2 flex items-center justify-between text-xs uppercase text-slate-400">
-                <span>Algorithm</span>
-              </label>
-              <select
-                value={selectedAlgorithm}
-                disabled={isRunning}
-                onChange={(event) => {
-                  setSelectedAlgorithm(event.target.value);
-                  handleReset();
-                }}
-                className="h-10 w-full rounded-xl border border-white/10 bg-slate-900/70 px-3 text-sm text-slate-100 outline-none focus:border-cyan-400/45"
-              >
+              <label className="mb-2 block text-xs uppercase text-slate-400">Algorithm</label>
+              <select value={selectedAlgorithm} disabled={isRunning} onChange={(e) => { setSelectedAlgorithm(e.target.value); handleReset(); }} className="h-10 w-full rounded-xl border border-white/10 bg-slate-900/70 px-3 text-sm text-slate-100 outline-none">
                 <option value="reverse">Reverse Linked List</option>
                 <option value="middle">Middle Node (Slow/Fast)</option>
               </select>
             </div>
-
             <div className="rounded-2xl bg-white/5 p-3">
-              <label className="mb-2 flex items-center justify-between text-xs uppercase text-slate-400">
-                <span>
-                  <Binary size={13} className="mr-1 inline" /> Size
-                </span>
-                <span>{listSize}</span>
-              </label>
-              <input
-                type="range"
-                min="4"
-                max="12"
-                value={listSize}
-                disabled={isRunning}
-                onChange={(event) => {
-                  const size = Number(event.target.value);
-                  setListSize(size);
-                  generateNewList(size);
-                }}
-                className="w-full accent-cyan-400"
-              />
+              <label className="mb-2 flex justify-between text-xs uppercase text-slate-400"><span>Size</span><span>{listSize}</span></label>
+              <input type="range" min="4" max="12" value={listSize} disabled={isRunning} onChange={(e) => { setListSize(Number(e.target.value)); generateNewList(Number(e.target.value)); }} className="w-full accent-cyan-400" />
             </div>
-
             <div className="rounded-2xl bg-white/5 p-3">
-              <label className="mb-2 flex items-center justify-between text-xs uppercase text-slate-400">
-                <span>
-                  <Clock3 size={13} className="mr-1 inline" /> Delay
-                </span>
-                <span>{speed}ms</span>
-              </label>
-              <input
-                type="range"
-                min="80"
-                max="600"
-                value={speed}
-                disabled={isRunning}
-                onChange={(event) => setSpeed(Number(event.target.value))}
-                className="w-full accent-blue-400"
-              />
+              <label className="mb-2 flex justify-between text-xs uppercase text-slate-400"><span>Delay</span><span>{speed}ms</span></label>
+              <input type="range" min="80" max="600" value={speed} disabled={isRunning} onChange={(e) => setSpeed(Number(e.target.value))} className="w-full accent-blue-400" />
             </div>
-
             <div className="grid grid-cols-2 gap-2">
-              <MotionButton
-                whileTap={{ scale: 0.95 }}
-                onClick={handleReset}
-                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-bold text-white"
-              >
-                <RotateCcw size={16} /> Reset
-              </MotionButton>
-              <MotionButton
-                whileTap={{ scale: 0.95 }}
-                onClick={() => generateNewList(listSize)}
-                className="flex items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 py-2.5 text-sm font-bold text-cyan-100"
-              >
-                <Shuffle size={16} /> New Data
-              </MotionButton>
+              <MotionButton whileTap={{ scale: 0.95 }} onClick={handleReset} className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-bold text-white"><RotateCcw size={16} /> Reset</MotionButton>
+              <MotionButton whileTap={{ scale: 0.95 }} onClick={() => generateNewList(listSize)} className="flex items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 py-2.5 text-sm font-bold text-cyan-100"><Shuffle size={16} /> Shuffle</MotionButton>
             </div>
-
-            {!isRunning ? (
-              <MotionButton
-                whileHover={{ scale: 1.02 }}
-                onClick={handleStart}
-                className="mt-auto flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 py-3.5 font-bold text-white shadow-lg"
-              >
-                <Play size={18} fill="currentColor" /> Start
-              </MotionButton>
-            ) : (
-              <MotionButton
-                onClick={isPaused ? handleResume : handlePause}
-                className={`mt-auto flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 font-bold text-white ${isPaused ? "bg-emerald-600" : "bg-amber-500 text-slate-900"}`}
-              >
-                {isPaused ? (
-                  <Play size={18} fill="currentColor" />
-                ) : (
-                  <Pause size={18} fill="currentColor" />
-                )}
-                {isPaused ? "Resume" : "Pause"}
-              </MotionButton>
-            )}
+            <MotionButton whileHover={{ scale: 1.02 }} onClick={isRunning ? (isPaused ? handleResume : handlePause) : handleStart} className={`mt-auto flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 font-bold text-white shadow-lg ${isRunning ? (isPaused ? "bg-emerald-600" : "bg-amber-500 text-slate-900") : "bg-gradient-to-r from-blue-600 to-cyan-500"}`}>
+              {isRunning ? (isPaused ? <Play size={18} fill="currentColor" /> : <Pause size={18} fill="currentColor" />) : <Play size={18} fill="currentColor" />}
+              {isRunning ? (isPaused ? "Resume" : "Pause") : "Start"}
+            </MotionButton>
           </div>
         </aside>
 
         <section className="min-w-0 h-full rounded-3xl border border-white/10 bg-slate-800/35 p-4 shadow-2xl backdrop-blur sm:p-6">
-          <div className="mb-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-300">
-              Node Graph
-            </p>
-            <p className="mt-1 text-xs text-slate-400">
-              Each card shows its current <code>next</code> pointer.
-            </p>
-          </div>
-
+          <div className="mb-4"><p className="text-xs font-bold uppercase tracking-widest text-slate-300">Node Graph</p></div>
           <div className="min-w-0 rounded-2xl border border-white/10 bg-slate-900/45">
-            <div
-              ref={nodeViewportRef}
-              className="ll-scrollbar h-[170px] w-full max-w-full overflow-x-auto overflow-y-hidden px-2 pb-3 pt-7"
-            >
+            <div ref={nodeViewportRef} className="ll-scrollbar h-[170px] w-full overflow-x-auto px-2 pb-3 pt-7">
               <div className="flex h-full min-w-max items-start gap-3 pr-4">
                 {nodeRenderOrder.map((nodeIndex, orderIndex) => {
                   const node = nodes[nodeIndex];
                   if (!node) return null;
-                  const labels = Object.entries(markers)
-                    .filter(([, markerIndex]) => markerIndex === nodeIndex)
-                    .map(([markerKey]) => markerLabels[markerKey]);
-                  const nextIndex = nextLinks[nodeIndex];
-
+                  const labels = Object.entries(markers).filter(([, idx]) => idx === nodeIndex).map(([k]) => markerLabels[k]);
                   return (
-                    <div
-                      key={node.id}
-                      ref={(element) => {
-                        if (element) nodeItemRefs.current[nodeIndex] = element;
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <MotionDiv
-                        layout
-                        transition={{
-                          type: "spring",
-                          stiffness: 250,
-                          damping: 28,
-                        }}
-                        className={`relative mt-2 min-w-[112px] rounded-xl border px-3 py-3 text-center shadow-lg ${getNodeStatusClass(node.status)}`}
-                      >
-                        {focusPointer?.index === nodeIndex && (
-                          <motion.div
-                            layoutId="active-pointer-focus"
-                            transition={{
-                              type: "spring",
-                              stiffness: 320,
-                              damping: 30,
-                            }}
-                            className="pointer-events-none absolute -inset-1 rounded-xl border-2 border-cyan-300/80 shadow-[0_0_0_6px_rgba(34,211,238,0.16)]"
-                          />
-                        )}
-                        {labels.length > 0 && (
-                          <div className="absolute -top-5 left-1/2 z-20 flex max-w-[130px] -translate-x-1/2 flex-wrap justify-center gap-1">
-                            {labels.map((label) => (
-                              <span
-                                key={`${node.id}-${label}`}
-                                className="rounded-full border border-slate-700 bg-slate-900/90 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-100"
-                              >
-                                {label}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        <p className="text-[10px] uppercase tracking-wider text-slate-200/90">
-                          Node {nodeIndex + 1}
-                        </p>
+                    <div key={node.id} ref={(el) => { if (el) nodeItemRefs.current[nodeIndex] = el; }} className="flex items-center gap-2">
+                      <MotionDiv layout className={`relative mt-2 min-w-[112px] rounded-xl border px-3 py-3 text-center shadow-lg ${getNodeStatusClass(node.status)}`}>
+                        {focusPointer?.index === nodeIndex && <motion.div layoutId="active-pointer-focus" className="pointer-events-none absolute -inset-1 rounded-xl border-2 border-cyan-300/80 shadow-[0_0_0_6px_rgba(34,211,238,0.16)]" />}
+                        {labels.length > 0 && <div className="absolute -top-5 left-1/2 flex -translate-x-1/2 gap-1">{labels.map((l) => <span key={l} className="rounded-full border border-slate-700 bg-slate-900/90 px-2 py-0.5 text-[10px] font-semibold uppercase text-slate-100">{l}</span>)}</div>}
+                        <p className="text-[10px] uppercase tracking-wider text-slate-200/90">Node {nodeIndex + 1}</p>
                         <p className="mt-1 text-xl font-bold">{node.value}</p>
-                        <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-100/85">
-                          next:{" "}
-                          {nextIndex === null
-                            ? "null"
-                            : (nodes[nextIndex]?.value ?? "null")}
-                        </p>
+                        <p className="mt-1 text-[10px] font-semibold uppercase text-slate-100/85">next: {nextLinks[nodeIndex] === null ? "null" : (nodes[nextLinks[nodeIndex]]?.value ?? "null")}</p>
                       </MotionDiv>
-                      {orderIndex < nodeRenderOrder.length - 1 && (
-                        <span className="self-center text-sm font-bold text-slate-500">
-                          -&gt;
-                        </span>
-                      )}
+                      {orderIndex < nodeRenderOrder.length - 1 && <span className="text-sm font-bold text-slate-500">→</span>}
                     </div>
                   );
                 })}
               </div>
             </div>
           </div>
-
-          <div className="ll-scrollbar mt-2 w-full max-w-full overflow-x-auto">
-            <div className="flex min-w-max items-center gap-2 pb-1">
-              {pointerSummary.length === 0 ? (
-                <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-400">
-                  No active pointers
-                </span>
-              ) : (
-                pointerSummary.map((pointer) => (
-                  <span
-                    key={pointer.key}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ${focusPointer?.key === pointer.key
-
-                      }`}
-                  >
-                    {pointer.label}: {pointer.value}
-                  </span>
-                ))
-              )}
-            </div>
-          </div>
-
           <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900/60 p-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-300">
-              Traversal From Head
-            </p>
-            <div className="ll-scrollbar mt-3 w-full max-w-full overflow-x-auto">
-              <div className="flex min-w-max items-center gap-2 pb-1 text-sm">
-                {listTraversal.order.length === 0 ? (
-                  <span className="text-slate-400">null</span>
-                ) : (
-                  <>
-                    {listTraversal.order.map((index, orderIndex) => (
-                      <div
-                        key={`${nodes[index].id}-order`}
-                        className="flex items-center gap-2"
-                      >
-                        <span className="rounded-lg border border-cyan-400/35 bg-cyan-500/10 px-2.5 py-1 font-semibold text-cyan-100">
-                          {nodes[index].value}
-                        </span>
-                        {orderIndex < listTraversal.order.length - 1 && (
-                          <span className="text-slate-400">-&gt;</span>
-                        )}
-                      </div>
-                    ))}
-                    <span className="text-slate-500">-&gt; null</span>
-                    {listTraversal.hasCycle && (
-                      <span className="rounded-full border border-rose-400/35 bg-rose-500/15 px-2 py-0.5 text-xs font-semibold text-rose-100">
-                        cycle detected
-                      </span>
-                    )}
-                  </>
-                )}
-              </div>
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-300">Traversal</p>
+            <div className="ll-scrollbar mt-3 flex overflow-x-auto gap-2 pb-1 text-sm">
+              {listTraversal.order.length === 0 ? <span className="text-slate-400">null</span> : (
+                <>
+                  {listTraversal.order.map((idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="rounded-lg border border-cyan-400/35 bg-cyan-500/10 px-2.5 py-1 font-semibold text-cyan-100">{nodes[idx].value}</span>
+                      <span className="text-slate-400">→</span>
+                    </div>
+                  ))}
+                  <span className="text-slate-500">null</span>
+                </>
+              )}
             </div>
           </div>
         </section>
@@ -855,14 +591,12 @@ export default function LinkedListVisualizerPage() {
         <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 px-6 py-4">
           <div className="flex items-center gap-3">
             <Code2 size={20} className="text-blue-400" />
-            <span className="text-sm font-bold uppercase tracking-widest text-slate-200">
-              {selectedLanguage} Source
-            </span>
+            <span className="text-sm font-bold uppercase tracking-widest text-slate-200">{selectedLanguage} Source</span>
             <div className="ml-4 flex rounded-lg bg-white/5 p-1 border border-white/10">
-              {["C++", "Python"].map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => setSelectedLanguage(lang)}
+              {["C++", "Python", "Java"].map((lang) => ( // Added Java to mapping
+                <button 
+                  key={lang} 
+                  onClick={() => setSelectedLanguage(lang)} 
                   className={`px-3 py-1 text-[10px] font-bold rounded-md transition-all ${selectedLanguage === lang ? "bg-blue-600 text-white" : "text-slate-400 hover:text-white"}`}
                 >
                   {lang}
@@ -871,43 +605,19 @@ export default function LinkedListVisualizerPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={handleCopyCode}
-              className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-slate-200 transition-colors hover:bg-white/10"
-            >
-              {copyState === "copied" ? (
-                <CheckCheck size={14} className="text-emerald-400" />
-              ) : (
-                <Copy size={14} />
-              )}
-              {copyState === "copied" ? "Copied" : "Copy"}
+            <button onClick={handleCopyCode} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-slate-200 transition-colors hover:bg-white/10">
+              {copyState === "copied" ? <CheckCheck size={14} className="text-emerald-400" /> : <Copy size={14} />} {copyState === "copied" ? "Copied" : "Copy"}
             </button>
-            <button
-              onClick={handleDownloadCode}
-              className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-slate-200 transition-colors hover:bg-white/10"
-            >
-              <Download size={14} /> Download
-            </button>
+            <button onClick={handleDownloadCode} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-slate-200 transition-colors hover:bg-white/10"><Download size={14} /> Download</button>
           </div>
         </div>
-        <div className="ll-scrollbar max-h-[500px] overflow-auto bg-[#020617] p-6 font-code text-sm leading-relaxed">
-          <pre>
-            <code>
-              {activeCodeSnippet.split("\n").map((line, index) => (
-                <div
-                  key={`${selectedAlgorithm}-line-${index}`}
-                  className="flex rounded px-2 hover:bg-white/5"
-                >
-                  <span className="w-8 shrink-0 select-none pr-4 text-right text-xs text-slate-600">
-                    {index + 1}
-                  </span>
-                  <span className="text-slate-300">
-                    {renderHighlightedCode(line)}
-                  </span>
-                </div>
-              ))}
-            </code>
-          </pre>
+        <div className="ll-scrollbar max-h-[500px] overflow-auto bg-[#020617] p-6 font-code text-sm">
+          <pre><code>{activeCodeSnippet.split("\n").map((line, i) => (
+            <div key={i} className="flex rounded px-2 hover:bg-white/5">
+              <span className="w-8 shrink-0 select-none pr-4 text-right text-xs text-slate-600">{i + 1}</span>
+              <span className="text-slate-300">{renderHighlightedCode(line)}</span>
+            </div>
+          ))}</code></pre>
         </div>
       </section>
     </div>
